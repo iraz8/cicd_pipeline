@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Fetch Git URLs</title>
+</head>
+<body>
+<h1>Enter Git URL</h1>
+<form th:action="@{/fetch-git-urls}" method="post">
+    <input type="text" name="gitUrl" placeholder="Enter Git URL" required/>
+    <button type="submit">Submit</button>
+    <div th:if="${errorMessage}" th:text="${errorMessage}" style="color: red;"></div>
+</form>
+<h2>Existing Git URLs</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>URL</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="repo : ${gitUrls}">
+        <td th:text="${repo.name}"></td>
+        <td th:text="${repo.url}"></td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
