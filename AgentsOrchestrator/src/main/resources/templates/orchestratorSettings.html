@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Orchestrator Settings</title>
+</head>
+<body>
+<h1>Orchestrator Settings</h1>
+<form th:action="@{/updateSettings}" method="post">
+  <label for="agentsNumber">Number of Agents:</label>
+  <input type="number" id="agentsNumber" name="agentsNumber" min="1" required>
+  <button type="submit">Update</button>
+</form>
+</body>
+</html>
