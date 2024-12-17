@@ -47,6 +47,12 @@ public class GitFetcherController {
             return "fetch-git-urls";
         }
 
+        if (gitUrlRepoRepository.existsByUrl(gitUrl)) {
+            model.addAttribute("errorMessage", "Repository already exists in the database");
+            model.addAttribute("gitUrls", gitUrlRepoRepository.findAll());
+            return "fetch-git-urls";
+        }
+
         Path repoDir = Paths.get("Repositories", gitFetcherService.extractRepoName(gitUrl));
         if (Files.exists(repoDir)) {
             model.addAttribute("errorMessage", "Repository folder already exists");

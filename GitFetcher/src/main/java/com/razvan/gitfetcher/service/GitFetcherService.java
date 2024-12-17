@@ -1,8 +1,11 @@
 package com.razvan.gitfetcher.service;
 
+import com.razvan.gitfetcher.model.GitUrlRepo;
+import com.razvan.gitfetcher.repository.GitUrlRepoRepository;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -11,12 +14,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class GitFetcherService {
 
     private final Map<String, String> repoLastCommitMap = new HashMap<>();
+    private final GitUrlRepoRepository gitUrlRepoRepository;
+
+    @Autowired
+    public GitFetcherService(GitUrlRepoRepository gitUrlRepoRepository) {
+        this.gitUrlRepoRepository = gitUrlRepoRepository;
+        initializeRepoLastCommitMap();
+    }
+
+    private void initializeRepoLastCommitMap() {
+        List<GitUrlRepo> gitUrlRepos = gitUrlRepoRepository.findAll();
+        for (GitUrlRepo repo : gitUrlRepos) {
+            repoLastCommitMap.put(repo.getUrl(), null);
+        }
+    }
 
     public void addGitUrl(String gitUrl) {
         repoLastCommitMap.put(gitUrl, null);
