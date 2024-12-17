@@ -2,12 +2,17 @@ package com.razvan.gitfetcher.service;
 
 import com.razvan.gitfetcher.model.GitUrlRepo;
 import com.razvan.gitfetcher.repository.GitUrlRepoRepository;
+import com.razvan.gitfetcher.util.UrlUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,13 +27,17 @@ public class GitFetcherService {
 
     private final Map<String, String> repoLastCommitMap = new HashMap<>();
     private final GitUrlRepoRepository gitUrlRepoRepository;
+    private final String orchestratorUrl;
+    private final String orchestratorRepositoryPath;
 
-    @Autowired
-    public GitFetcherService(GitUrlRepoRepository gitUrlRepoRepository) {
+    public GitFetcherService(GitUrlRepoRepository gitUrlRepoRepository,
+                             @Value("${agents.orchestrator.url}") String orchestratorUrl,
+                             @Value("${agents.orchestrator.path.repository}") String orchestratorRepositoryPath) {
         this.gitUrlRepoRepository = gitUrlRepoRepository;
+        this.orchestratorUrl = orchestratorUrl;
+        this.orchestratorRepositoryPath = orchestratorRepositoryPath;
         initializeRepoLastCommitMap();
     }
-
     private void initializeRepoLastCommitMap() {
         List<GitUrlRepo> gitUrlRepos = gitUrlRepoRepository.findAll();
         for (GitUrlRepo repo : gitUrlRepos) {
@@ -48,10 +57,26 @@ public class GitFetcherService {
             if (newCommitHash != null && !newCommitHash.equals(lastCommitHash)) {
                 System.out.println("New update found for repo: " + gitUrl);
                 repoLastCommitMap.put(gitUrl, newCommitHash);
+                String repoName = extractRepoName(gitUrl);
+                notifyAgentsOrchestrator(repoName, gitUrl);
             } else {
                 System.out.println("No new updates found for repo: " + gitUrl);
             }
         }
+    }
+
+    private void notifyAgentsOrchestrator(String name, String url) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("name", name);
+        requestBody.put("url", url);
+
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
+        String fullUrl = UrlUtils.buildUrl(orchestratorUrl, orchestratorRepositoryPath);
+        restTemplate.postForEntity(fullUrl, request, String.class);
     }
 
     private String fetchLatestCommitHash(String gitUrl) {
