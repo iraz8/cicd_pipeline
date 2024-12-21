@@ -1,6 +1,6 @@
 package com.razvan.gitfetcher.service;
 
-import com.razvan.gitfetcher.model.GitUrlRepo;
+import com.razvan.gitfetcher.model.Repository;
 import com.razvan.gitfetcher.repository.GitUrlRepoRepository;
 import com.razvan.gitfetcher.util.UrlUtils;
 import org.eclipse.jgit.api.Git;
@@ -28,19 +28,19 @@ public class GitFetcherService {
     private final Map<String, String> repoLastCommitMap = new HashMap<>();
     private final GitUrlRepoRepository gitUrlRepoRepository;
     private final String orchestratorUrl;
-    private final String orchestratorRepositoryPath;
+    private final String orchestratorNewCommitNotifierPath;
 
     public GitFetcherService(GitUrlRepoRepository gitUrlRepoRepository,
                              @Value("${agents.orchestrator.url}") String orchestratorUrl,
-                             @Value("${agents.orchestrator.path.repository}") String orchestratorRepositoryPath) {
+                             @Value("${agents.orchestrator.path.new-commit}") String orchestratorNewCommitNotifierPath) {
         this.gitUrlRepoRepository = gitUrlRepoRepository;
         this.orchestratorUrl = orchestratorUrl;
-        this.orchestratorRepositoryPath = orchestratorRepositoryPath;
+        this.orchestratorNewCommitNotifierPath = orchestratorNewCommitNotifierPath;
         initializeRepoLastCommitMap();
     }
     private void initializeRepoLastCommitMap() {
-        List<GitUrlRepo> gitUrlRepos = gitUrlRepoRepository.findAll();
-        for (GitUrlRepo repo : gitUrlRepos) {
+        List<Repository> repositories = gitUrlRepoRepository.findAll();
+        for (Repository repo : repositories) {
             repoLastCommitMap.put(repo.getUrl(), null);
         }
     }
@@ -75,7 +75,7 @@ public class GitFetcherService {
         requestBody.put("url", url);
 
         HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
-        String fullUrl = UrlUtils.buildUrl(orchestratorUrl, orchestratorRepositoryPath);
+        String fullUrl = UrlUtils.buildUrl(orchestratorUrl, orchestratorNewCommitNotifierPath);
         restTemplate.postForEntity(fullUrl, request, String.class);
     }
 

@@ -1,4 +1,4 @@
-package com.razvan.gitfetcher.model;
+package com.razvan.agentsorchestrator.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -6,7 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class GitUrlRepo {
+public class Repository {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,10 +14,10 @@ public class GitUrlRepo {
     private String name;
     private String url;
 
-    public GitUrlRepo() {
+    public Repository() {
     }
 
-    public GitUrlRepo(Long id, String name, String url) {
+    public Repository(Long id, String name, String url) {
         this.id = id;
         this.name = name;
         this.url = url;

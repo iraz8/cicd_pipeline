@@ -1,6 +1,6 @@
 package com.razvan.gitfetcher.controller;
 
-import com.razvan.gitfetcher.model.GitUrlRepo;
+import com.razvan.gitfetcher.model.Repository;
 import com.razvan.gitfetcher.repository.GitUrlRepoRepository;
 import com.razvan.gitfetcher.service.GitFetcherService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +34,8 @@ public class GitFetcherController {
 
     @GetMapping("/fetch-git-urls")
     public String showForm(Model model) {
-        List<GitUrlRepo> gitUrlRepos = gitUrlRepoRepository.findAll();
-        model.addAttribute("gitUrls", gitUrlRepos);
+        List<Repository> repositories = gitUrlRepoRepository.findAll();
+        model.addAttribute("gitUrls", repositories);
         return "fetch-git-urls";
     }
 
@@ -62,10 +62,10 @@ public class GitFetcherController {
 
         gitFetcherService.addGitUrl(gitUrl);
 
-        GitUrlRepo gitUrlRepo = new GitUrlRepo();
-        gitUrlRepo.setName(gitFetcherService.extractRepoName(gitUrl));
-        gitUrlRepo.setUrl(gitUrl);
-        gitUrlRepoRepository.save(gitUrlRepo);
+        Repository repository = new Repository();
+        repository.setName(gitFetcherService.extractRepoName(gitUrl));
+        repository.setUrl(gitUrl);
+        gitUrlRepoRepository.save(repository);
 
         return "redirect:/fetch-git-urls";
     }
