@@ -1,7 +1,7 @@
 package com.razvan.gitfetcher.service;
 
-import com.razvan.gitfetcher.model.Repository;
-import com.razvan.gitfetcher.repository.GitUrlRepoRepository;
+import com.razvan.gitfetcher.model.Project;
+import com.razvan.gitfetcher.repository.ProjectRepository;
 import com.razvan.gitfetcher.util.UrlUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -26,21 +26,21 @@ import java.util.Map;
 public class GitFetcherService {
 
     private final Map<String, String> repoLastCommitMap = new HashMap<>();
-    private final GitUrlRepoRepository gitUrlRepoRepository;
+    private final ProjectRepository projectRepository;
     private final String orchestratorUrl;
     private final String orchestratorNewCommitNotifierPath;
 
-    public GitFetcherService(GitUrlRepoRepository gitUrlRepoRepository,
+    public GitFetcherService(ProjectRepository projectRepository,
                              @Value("${agents.orchestrator.url}") String orchestratorUrl,
                              @Value("${agents.orchestrator.path.new-commit}") String orchestratorNewCommitNotifierPath) {
-        this.gitUrlRepoRepository = gitUrlRepoRepository;
+        this.projectRepository = projectRepository;
         this.orchestratorUrl = orchestratorUrl;
         this.orchestratorNewCommitNotifierPath = orchestratorNewCommitNotifierPath;
         initializeRepoLastCommitMap();
     }
     private void initializeRepoLastCommitMap() {
-        List<Repository> repositories = gitUrlRepoRepository.findAll();
-        for (Repository repo : repositories) {
+        List<Project> repositories = projectRepository.findAll();
+        for (Project repo : repositories) {
             repoLastCommitMap.put(repo.getUrl(), null);
         }
     }
@@ -84,7 +84,7 @@ public class GitFetcherService {
         var repoDir = Paths.get("Repositories", repoName);
         try {
             if (Files.exists(repoDir)) {
-                return fetchFromExistingRepo(repoDir);
+                return fetchFromExistingRepo(gitUrl, repoDir);
             } else {
                 return cloneNewRepo(gitUrl, repoDir);
             }
@@ -94,11 +94,21 @@ public class GitFetcherService {
         }
     }
 
-    private String fetchFromExistingRepo(Path repoDir) throws IOException, GitAPIException {
-        try (var git = Git.open(repoDir.toFile())) {
-            git.pull().call();
-            System.out.println("Pulled latest changes for repo: " + repoDir);
-            return getHeadCommitHash(git);
+    private String fetchFromExistingRepo(String gitUrl, Path repoDir) throws IOException, GitAPIException {
+        if (!Files.exists(repoDir)) {
+            // Directory does not exist, clone the repository
+            try (var git = Git.cloneRepository()
+                    .setURI(gitUrl)
+                    .setDirectory(repoDir.toFile())
+                    .call()) {
+                return git.getRepository().findRef("HEAD").getObjectId().getName();
+            }
+        } else {
+            // Directory exists, open the repository
+            try (var git = Git.open(repoDir.toFile())) {
+                git.pull().call();
+                return git.getRepository().findRef("HEAD").getObjectId().getName();
+            }
         }
     }
 

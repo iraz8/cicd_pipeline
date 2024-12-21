@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Project Settings</title>
+    <script>
+        function updateHiddenInput(checkbox) {
+            const hiddenInput = document.getElementById('hidden_' + checkbox.name);
+            if (checkbox.checked) {
+                if (hiddenInput) {
+                    hiddenInput.remove();
+                }
+            } else {
+                if (!hiddenInput) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.id = 'hidden_' + checkbox.name;
+                    input.name = checkbox.name;
+                    input.value = 'off';
+                    checkbox.form.appendChild(input);
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+<h1>Project Settings</h1>
+<form th:action="@{/saveProjectSettings}" method="post">
+    <div style="position: relative;">
+        <table>
+            <thead>
+            <tr>
+                <th>Project Name</th>
+                <th>Active</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="project : ${projects}">
+                <td th:text="${project.name}"></td>
+                <td>
+                    <input type="checkbox" th:checked="${project.active}" th:name="'active_' + ${project.id}" value="on" onchange="updateHiddenInput(this)">
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div style="position: absolute; bottom: 10px; right: 10px;">
+            <button type="button" onclick="window.location.reload();">Undo all changes</button>
+            <button type="submit">Save</button>
+        </div>
+    </div>
+</form>
+</body>
+</html>

@@ -1,7 +1,7 @@
 package com.razvan.agentsorchestrator.model;
 
 public class Job {
-    private Repository repository;
+    private Project project;
     private Commands commands;
 
 }

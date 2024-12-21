@@ -1,7 +1,7 @@
 package com.razvan.gitfetcher.controller;
 
-import com.razvan.gitfetcher.model.Repository;
-import com.razvan.gitfetcher.repository.GitUrlRepoRepository;
+import com.razvan.gitfetcher.model.Project;
+import com.razvan.gitfetcher.repository.ProjectRepository;
 import com.razvan.gitfetcher.service.GitFetcherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -20,21 +20,21 @@ import java.util.regex.Pattern;
 public class GitFetcherController {
 
     private final GitFetcherService gitFetcherService;
-    private final GitUrlRepoRepository gitUrlRepoRepository;
+    private final ProjectRepository projectRepository;
 
     private static final Pattern GIT_URL_PATTERN = Pattern.compile(
             "^(https?|git|ssh)://.*\\.git$|^git@.*:.*\\.git$"
     );
 
     @Autowired
-    public GitFetcherController(GitFetcherService gitFetcherService, GitUrlRepoRepository gitUrlRepoRepository) {
+    public GitFetcherController(GitFetcherService gitFetcherService, ProjectRepository projectRepository) {
         this.gitFetcherService = gitFetcherService;
-        this.gitUrlRepoRepository = gitUrlRepoRepository;
+        this.projectRepository = projectRepository;
     }
 
     @GetMapping("/fetch-git-urls")
     public String showForm(Model model) {
-        List<Repository> repositories = gitUrlRepoRepository.findAll();
+        List<Project> repositories = projectRepository.findAll();
         model.addAttribute("gitUrls", repositories);
         return "fetch-git-urls";
     }
@@ -43,29 +43,30 @@ public class GitFetcherController {
     public String fetchGitUrls(@RequestParam("gitUrl") String gitUrl, Model model) {
         if (!isValidGitUrl(gitUrl)) {
             model.addAttribute("errorMessage", "Invalid Git URL");
-            model.addAttribute("gitUrls", gitUrlRepoRepository.findAll());
+            model.addAttribute("gitUrls", projectRepository.findAll());
             return "fetch-git-urls";
         }
 
-        if (gitUrlRepoRepository.existsByUrl(gitUrl)) {
+        if (projectRepository.existsByUrl(gitUrl)) {
             model.addAttribute("errorMessage", "Repository already exists in the database");
-            model.addAttribute("gitUrls", gitUrlRepoRepository.findAll());
+            model.addAttribute("gitUrls", projectRepository.findAll());
             return "fetch-git-urls";
         }
 
         Path repoDir = Paths.get("Repositories", gitFetcherService.extractRepoName(gitUrl));
         if (Files.exists(repoDir)) {
             model.addAttribute("errorMessage", "Repository folder already exists");
-            model.addAttribute("gitUrls", gitUrlRepoRepository.findAll());
+            model.addAttribute("gitUrls", projectRepository.findAll());
             return "fetch-git-urls";
         }
 
         gitFetcherService.addGitUrl(gitUrl);
 
-        Repository repository = new Repository();
-        repository.setName(gitFetcherService.extractRepoName(gitUrl));
-        repository.setUrl(gitUrl);
-        gitUrlRepoRepository.save(repository);
+        Project project = new Project();
+        project.setName(gitFetcherService.extractRepoName(gitUrl));
+        project.setUrl(gitUrl);
+        project.setActive(true);
+        projectRepository.save(project);
 
         return "redirect:/fetch-git-urls";
     }

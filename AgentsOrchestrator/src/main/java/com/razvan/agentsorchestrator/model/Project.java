@@ -1,30 +1,23 @@
-package com.razvan.gitfetcher.model;
+package com.razvan.agentsorchestrator.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Setter
 @Getter
-public class Repository {
+@NoArgsConstructor
+public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String url;
-
-    public Repository() {
-    }
-
-    public Repository(Long id, String name, String url) {
-        this.id = id;
-        this.name = name;
-        this.url = url;
-    }
-
+    private Boolean active;
 }

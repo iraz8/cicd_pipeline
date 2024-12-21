@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,9 +38,7 @@ public class AgentsOrchestrationService {
                 agents.add(new Agent(i, "Agent_" + i));
             }
         } else if (newNumber < currentNumber) {
-            for (int i = currentNumber - 1; i >= newNumber; i--) {
-                agents.remove(i);
-            }
+            agents.subList(newNumber, currentNumber).clear();
         }
         System.out.println("Updated agents number to: " + newNumber);
     }

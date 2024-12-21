@@ -1,8 +1,8 @@
 package com.razvan.gitfetcher.repository;
 
-import com.razvan.gitfetcher.model.Repository;
+import com.razvan.gitfetcher.model.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface GitUrlRepoRepository extends JpaRepository<Repository, Long> {
+public interface ProjectRepository extends JpaRepository<Project, Long> {
         boolean existsByUrl(String url);
 }
