@@ -1,7 +1,9 @@
 package com.razvan.agentsorchestrator.model;
 
-public class Job {
-    private Project project;
-    private Commands commands;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
+public class Job {
+    private Long projectId;
+    private Commands command;
 }

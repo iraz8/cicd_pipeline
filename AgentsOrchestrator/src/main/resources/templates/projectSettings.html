@@ -25,28 +25,45 @@
 <body>
 <h1>Project Settings</h1>
 <form th:action="@{/saveProjectSettings}" method="post">
-    <div style="position: relative;">
-        <table>
-            <thead>
-            <tr>
-                <th>Project Name</th>
-                <th>Active</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="project : ${projects}">
-                <td th:text="${project.name}"></td>
-                <td>
-                    <input type="checkbox" th:checked="${project.active}" th:name="'active_' + ${project.id}" value="on" onchange="updateHiddenInput(this)">
-                </td>
-            </tr>
-            </tbody>
-        </table>
-        <div style="position: absolute; bottom: 10px; right: 10px;">
-            <button type="button" onclick="window.location.reload();">Undo all changes</button>
-            <button type="submit">Save</button>
-        </div>
+    <table style="width: auto; table-layout: auto;">
+        <thead>
+        <tr>
+            <th>Project Name</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="project : ${projects}">
+            <td th:text="${project.name}"></td>
+            <td>
+                <input type="checkbox" th:checked="${project.active}" th:name="'active_' + ${project.id}" value="on"
+                       onchange="updateHiddenInput(this)">
+            </td>
+            <td>
+                <button type="button" th:onclick="'runTests(' + ${project.id} + ')'">Run tests</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <div style="margin-top: 10px; text-align: right;">
+        <button type="button" onclick="window.location.reload();">Undo all changes</button>
+        <button type="submit">Save</button>
     </div>
 </form>
+<script>
+    function runCommand(projectId, command) {
+        fetch(`/runCommand/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ command: command })
+        })
+            .then(response => response.json())
+            .then(data => console.log('Project ID:', data.projectId, 'Command:', data.command))
+            .catch(error => console.error('Error:', error));
+    }
+</script>
 </body>
 </html>

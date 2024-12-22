@@ -96,7 +96,6 @@ public class GitFetcherService {
 
     private String fetchFromExistingRepo(String gitUrl, Path repoDir) throws IOException, GitAPIException {
         if (!Files.exists(repoDir)) {
-            // Directory does not exist, clone the repository
             try (var git = Git.cloneRepository()
                     .setURI(gitUrl)
                     .setDirectory(repoDir.toFile())
@@ -104,7 +103,6 @@ public class GitFetcherService {
                 return git.getRepository().findRef("HEAD").getObjectId().getName();
             }
         } else {
-            // Directory exists, open the repository
             try (var git = Git.open(repoDir.toFile())) {
                 git.pull().call();
                 return git.getRepository().findRef("HEAD").getObjectId().getName();

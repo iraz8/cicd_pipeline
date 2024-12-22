@@ -13,5 +13,16 @@ public class Agent {
     public Agent(Integer id, String name) {
         this.id = id;
         this.name = name;
+        this.job = null;
     }
+
+    public Boolean hasJobAssigned() {
+        return this.job != null;
+    }
+
+    public void setJob(Job job) {
+        this.job = job;
+        System.out.println("Job assigned to agent " + name + ": " + job);
+    }
+
 }

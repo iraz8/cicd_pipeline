@@ -1,6 +1,6 @@
 package com.razvan.agentsorchestrator.service;
 
-import com.razvan.agentsorchestrator.model.Project;
+import com.razvan.agentsorchestrator.model.Job;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
 
@@ -10,10 +10,9 @@ import java.util.Queue;
 @Getter
 @Service
 public class JobQueueService {
-    private final Queue<Project> projectQueue = new LinkedList<>();
+    private final Queue<Job> projectQueue = new LinkedList<>();
 
-    public void addJob(Project repository) {
-        projectQueue.add(repository);
+    public void addJob(Job job) {
+        projectQueue.add(job);
     }
-
 }
