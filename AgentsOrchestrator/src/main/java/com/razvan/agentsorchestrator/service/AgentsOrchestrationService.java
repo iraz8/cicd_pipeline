@@ -17,12 +17,14 @@ public class AgentsOrchestrationService {
     private final List<Agent> agents;
     private final AgentService agentService;
     private final JobQueueService jobQueueService;
+    private final JobExecutionService jobExecutionService;
 
     @Autowired
-    public AgentsOrchestrationService(@Value("${agents.number}") int agentsNumber, AgentService agentService, JobQueueService jobQueueService) {
+    public AgentsOrchestrationService(@Value("${agents.number}") int agentsNumber, AgentService agentService, JobQueueService jobQueueService, JobExecutionService jobExecutionService) {
         this.agents = new ArrayList<>();
         this.agentService = agentService;
         this.jobQueueService = jobQueueService;
+        this.jobExecutionService = jobExecutionService;
         for (int i = 0; i < agentsNumber; i++) {
             agents.add(new Agent(i, "Agent_" + i));
         }
@@ -31,7 +33,7 @@ public class AgentsOrchestrationService {
     @PostConstruct
     public void initializeAgents() {
         for (Agent agent : agents) {
-            agentService.startDockerContainer(agent);
+            agent.setContainerId(agentService.startDockerContainer(agent));
         }
     }
 
@@ -55,6 +57,7 @@ public class AgentsOrchestrationService {
                 if (job != null) {
                     agent.setJob(job);
                     System.out.println("Assigned job to agent: " + agent.getName());
+                    jobExecutionService.executeJob(agent);
                 }
             }
         }

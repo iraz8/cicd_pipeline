@@ -76,12 +76,32 @@ public class GitFetcherService {
 
         HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
         String fullUrl = UrlUtils.buildUrl(orchestratorUrl, orchestratorNewCommitNotifierPath);
-        restTemplate.postForEntity(fullUrl, request, String.class);
+
+        int maxRetries = 5;
+        int retryCount = 0;
+        boolean success = false;
+
+        while (retryCount < maxRetries && !success) {
+            try {
+                restTemplate.postForEntity(fullUrl, request, String.class);
+                success = true;
+            } catch (Exception e) {
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Thread was interrupted", ie);
+                    }
+                }
+            }
+        }
     }
 
     private String fetchLatestCommitHash(String gitUrl) {
         String repoName = extractRepoName(gitUrl);
-        var repoDir = Paths.get("Repositories", repoName);
+        var repoDir = Paths.get("Projects", repoName);
         try {
             if (Files.exists(repoDir)) {
                 return fetchFromExistingRepo(gitUrl, repoDir);

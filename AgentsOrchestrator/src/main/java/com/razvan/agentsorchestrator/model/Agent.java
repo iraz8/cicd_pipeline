@@ -1,5 +1,6 @@
 package com.razvan.agentsorchestrator.model;
 
+import com.razvan.agentsorchestrator.service.JobExecutionService;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +10,7 @@ public class Agent {
     private Integer id;
     private String name;
     private Job job;
+    private String containerId;
 
     public Agent(Integer id, String name) {
         this.id = id;
@@ -16,7 +18,7 @@ public class Agent {
         this.job = null;
     }
 
-    public Boolean hasJobAssigned() {
+    public boolean hasJobAssigned() {
         return this.job != null;
     }
 

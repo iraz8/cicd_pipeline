@@ -41,7 +41,7 @@
                        onchange="updateHiddenInput(this)">
             </td>
             <td>
-                <button type="button" th:onclick="'runTests(' + ${project.id} + ')'">Run tests</button>
+                <button type="button" th:onclick="'runCommand(' + ${project.id} + ', \'RUN_TESTS\')'">Run tests</button>
             </td>
         </tr>
         </tbody>

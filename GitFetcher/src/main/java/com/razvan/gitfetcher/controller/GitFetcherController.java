@@ -34,8 +34,8 @@ public class GitFetcherController {
 
     @GetMapping("/fetch-git-urls")
     public String showForm(Model model) {
-        List<Project> repositories = projectRepository.findAll();
-        model.addAttribute("gitUrls", repositories);
+        List<Project> projects = projectRepository.findAll();
+        model.addAttribute("gitUrls", projects);
         return "fetch-git-urls";
     }
 
@@ -53,7 +53,7 @@ public class GitFetcherController {
             return "fetch-git-urls";
         }
 
-        Path repoDir = Paths.get("Repositories", gitFetcherService.extractRepoName(gitUrl));
+        Path repoDir = Paths.get("Projects", gitFetcherService.extractRepoName(gitUrl));
         if (Files.exists(repoDir)) {
             model.addAttribute("errorMessage", "Repository folder already exists");
             model.addAttribute("gitUrls", projectRepository.findAll());

@@ -3,7 +3,7 @@ FROM amazoncorretto:latest
 # Install required tools and Apache
 RUN yum -y update && \
     yum -y groupinstall "Development Tools" && \
-    yum -y install gcc gcc-c++ make cmake curl httpd && \
+    yum -y install gcc gcc-c++ make cmake curl httpd tar && \
     yum clean all
 
 WORKDIR /app
