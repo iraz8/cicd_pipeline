@@ -1,12 +1,14 @@
 package com.razvan.agentsorchestrator.service;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.exception.ConflictException;
 import com.github.dockerjava.api.exception.DockerClientException;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
@@ -92,7 +94,10 @@ public class AgentService {
                         .orElseThrow(() -> new NotFoundException("Container not found"))
                         .getId();
 
-                dockerClient.stopContainerCmd(containerId).exec();
+                boolean isRunning = dockerClient.inspectContainerCmd(containerId).exec().getState().getRunning();
+                if (isRunning) {
+                    dockerClient.stopContainerCmd(containerId).exec();
+                }
                 dockerClient.removeContainerCmd(containerId).exec();
                 System.out.println("Stopped and removed existing container: " + containerId);
             }
@@ -135,6 +140,9 @@ public class AgentService {
                     .exec();
 
             System.out.println("Project copied to container: " + containerId);
+
+            uncompressTarArchive(dockerClient, containerId, tempTarFile);
+
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -152,10 +160,11 @@ public class AgentService {
         try (FileOutputStream fos = new FileOutputStream(tarFilePath);
              TarArchiveOutputStream tarOut = new TarArchiveOutputStream(fos)) {
             Path sourceDir = Paths.get(sourceDirPath);
+            Path parentDir = sourceDir.getParent();
             Files.walk(sourceDir).forEach(path -> {
                 File file = path.toFile();
                 if (file.isFile()) {
-                    TarArchiveEntry entry = new TarArchiveEntry(file, sourceDir.relativize(path).toString());
+                    TarArchiveEntry entry = new TarArchiveEntry(file, parentDir.relativize(path).toString());
                     try {
                         tarOut.putArchiveEntry(entry);
                         Files.copy(path, tarOut);
@@ -166,6 +175,30 @@ public class AgentService {
                 }
             });
             tarOut.finish();
+        }
+    }
+
+    private void uncompressTarArchive(DockerClient dockerClient, String containerId, Path tempTarFile) {
+        try {
+            String[] command = {"/bin/sh", "-c", "tar -xvf /home/" + tempTarFile.getFileName() + " -C /home"};
+
+            String execId = dockerClient.execCreateCmd(containerId)
+                    .withCmd(command)
+                    .withAttachStdout(true)
+                    .withAttachStderr(true)
+                    .exec()
+                    .getId();
+
+            dockerClient.execStartCmd(execId).exec(new ResultCallback.Adapter<>() {
+                @Override
+                public void onNext(Frame item) {
+                    System.out.println(new String(item.getPayload()));
+                }
+            });
+
+            System.out.println("Uncompressed project archive inside container: " + containerId);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
