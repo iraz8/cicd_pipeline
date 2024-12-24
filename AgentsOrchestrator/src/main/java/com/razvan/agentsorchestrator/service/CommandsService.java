@@ -16,15 +16,16 @@ public class CommandsService {
         this.jobQueueService = jobQueueService;
     }
 
-    public Map<String, Object> executeCommand(Long projectId, String commandStr) {
+    public Map<String, Object> executeCommand(Long projectId, String commandStr, String jobId) {
         Commands command = Commands.valueOf(commandStr);
-        System.out.println("Running commands for project ID: " + projectId + " with command: " + command);
+        System.out.println("Running commands for project ID: " + projectId + " with command: " + command + " and job ID: " + jobId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("projectId", projectId);
         response.put("command", command);
+        response.put("jobId", jobId);
 
-        Job job = new Job(projectId, command);
+        Job job = new Job(projectId, command, jobId);
         jobQueueService.addJob(job);
 
         return response;

@@ -18,13 +18,15 @@ public class AgentsOrchestrationService {
     private final AgentService agentService;
     private final JobQueueService jobQueueService;
     private final JobExecutionService jobExecutionService;
+    private final JobStatusService jobStatusService;
 
     @Autowired
-    public AgentsOrchestrationService(@Value("${agents.number}") int agentsNumber, AgentService agentService, JobQueueService jobQueueService, JobExecutionService jobExecutionService) {
+    public AgentsOrchestrationService(@Value("${agents.number}") int agentsNumber, AgentService agentService, JobQueueService jobQueueService, JobExecutionService jobExecutionService, JobStatusService jobStatusService) {
         this.agents = new ArrayList<>();
         this.agentService = agentService;
         this.jobQueueService = jobQueueService;
         this.jobExecutionService = jobExecutionService;
+        this.jobStatusService = jobStatusService;
         for (int i = 0; i < agentsNumber; i++) {
             agents.add(new Agent(i, "Agent_" + i));
         }
@@ -57,7 +59,10 @@ public class AgentsOrchestrationService {
                 if (job != null) {
                     agent.setJob(job);
                     System.out.println("Assigned job to agent: " + agent.getName());
-                    jobExecutionService.executeJob(agent);
+                    boolean result = jobExecutionService.executeJob(agent);
+                    System.out.println("Job execution result for agent " + agent.getName() + ": " + result);
+                    jobStatusService.updateJobStatus(job.getJobId(), result ? "COMPLETED" : "FAILED");
+                    agent.setJob(null);
                 }
             }
         }

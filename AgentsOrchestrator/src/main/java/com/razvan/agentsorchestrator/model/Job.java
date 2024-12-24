@@ -8,4 +8,5 @@ import lombok.Getter;
 public class Job {
     private Long projectId;
     private Commands command;
+    private String jobId;
 }

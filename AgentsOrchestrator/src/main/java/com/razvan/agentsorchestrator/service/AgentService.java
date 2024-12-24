@@ -36,24 +36,21 @@ import java.util.Optional;
 public class AgentService {
     private static final String IMAGE_TAG = "iraz/common-languages";
     private final ProjectRepository projectRepository;
+    private final DockerClient dockerClient;
 
     public AgentService(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
-    }
-
-    public String startDockerContainer(Agent agent) {
-        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .build();
-
+        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
         DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost(config.getDockerHost())
                 .maxConnections(100)
                 .connectionTimeout(Duration.ofSeconds(30))
                 .responseTimeout(Duration.ofSeconds(45))
                 .build();
+        this.dockerClient = DockerClientImpl.getInstance(config, httpClient);
+    }
 
-        DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);
-
+    public String startDockerContainer(Agent agent) {
         try {
             dockerClient.pullImageCmd(IMAGE_TAG)
                     .exec(new PullImageResultCallback())
@@ -194,11 +191,111 @@ public class AgentService {
                 public void onNext(Frame item) {
                     System.out.println(new String(item.getPayload()));
                 }
-            });
+            }).awaitCompletion();
 
             System.out.println("Uncompressed project archive inside container: " + containerId);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public boolean buildProjectInContainer(Agent agent) {
+        System.out.println("Building project in container: " + agent.getContainerId());
+        copyProjectToContainer(agent);
+
+        String containerId = agent.getContainerId();
+        Long projectId = agent.getJob().getProjectId();
+        Optional<Project> project = projectRepository.findById(projectId);
+        if (project.isEmpty()) {
+            System.out.println("Project not found: " + projectId);
+            return false;
+        }
+
+        String projectPath = "/home/" + project.get().getName();
+        String buildCommand = getBuildCommand(agent.getContainerId(), projectPath);
+
+        try {
+            String[] command = {"/bin/sh", "-c", buildCommand};
+
+            String execId = dockerClient.execCreateCmd(containerId)
+                    .withCmd(command)
+                    .withAttachStdout(true)
+                    .withAttachStderr(true)
+                    .exec()
+                    .getId();
+
+            dockerClient.execStartCmd(execId).exec(new ResultCallback.Adapter<>() {
+                @Override
+                public void onNext(Frame item) {
+                    System.out.println(new String(item.getPayload()));
+                }
+            }).awaitCompletion();
+
+            System.out.println("Build command executed in container: " + containerId);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private String getBuildCommand(String containerId, String projectPath) {
+        try {
+            String checkPom = "test -f " + projectPath + "/pom.xml";
+            String checkGradle = "test -f " + projectPath + "/build.gradle";
+            String checkMakefile = "test -f " + projectPath + "/Makefile";
+
+            if (executeCommandInContainer(containerId, checkPom)) {
+                return "cd " + projectPath + " && mvn clean install -DskipTests";
+            } else if (executeCommandInContainer(containerId, checkGradle)) {
+                return "cd " + projectPath + " && ./gradlew build";
+            } else if (executeCommandInContainer(containerId, checkMakefile)) {
+                return "cd " + projectPath + " && make";
+            } else {
+                throw new UnsupportedOperationException("Unsupported project language: No recognizable build file found in " + projectPath);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error checking build files in container", e);
+        }
+    }
+
+    private boolean executeCommandInContainer(String containerId, String command) throws Exception {
+        String execId = dockerClient.execCreateCmd(containerId)
+                .withCmd("/bin/sh", "-c", command)
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .exec()
+                .getId();
+
+        dockerClient.execStartCmd(execId).exec(new ResultCallback.Adapter<>() {
+            @Override
+            public void onNext(Frame item) {
+                System.out.println(new String(item.getPayload()));
+            }
+        }).awaitCompletion();
+
+        int exitCode = dockerClient.inspectExecCmd(execId).exec().getExitCode();
+        return exitCode == 0;
+    }
+
+    public boolean runTestsInContainer(Agent agent) {
+        System.out.println("Running tests in container: " + agent.getContainerId());
+        String containerId = agent.getContainerId();
+        Long projectId = agent.getJob().getProjectId();
+        Optional<Project> project = projectRepository.findById(projectId);
+        if (project.isEmpty()) {
+            System.out.println("Project not found: " + projectId);
+            return false;
+        }
+
+        String projectPath = "/home/" + project.get().getName();
+        String testCommand = "cd " + projectPath + " && mvn test";
+
+        try {
+            return executeCommandInContainer(containerId, testCommand);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }

@@ -18,6 +18,7 @@ public class CommandsController {
     @PostMapping("/{projectId}")
     public Map<String, Object> runCommand(@PathVariable Long projectId, @RequestBody Map<String, String> request) {
         String commandStr = request.get("command");
-        return commandsService.executeCommand(projectId, commandStr);
+        String jobId = request.get("jobId");
+        return commandsService.executeCommand(projectId, commandStr, jobId);
     }
 }

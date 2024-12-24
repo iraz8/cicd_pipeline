@@ -19,10 +19,18 @@ public class JobExecutionService {
     public Boolean executeJob(Agent agent) {
         Job job = agent.getJob();
         return switch (job.getCommand()) {
+            case BUILD -> {
+                System.out.println("Build project ID: " + job.getProjectId());
+                copyProjectToContainer(agent);
+                buildProject(agent);
+                yield true;
+            }
             case RUN_TESTS -> {
                 System.out.println("Run tests project ID: " + job.getProjectId());
                 copyProjectToContainer(agent);
-                yield runTests();
+                buildProject(agent);
+                runTests(agent);
+                yield true;
             }
             default -> {
                 System.out.println("Unknown command: " + job.getCommand());
@@ -31,13 +39,17 @@ public class JobExecutionService {
         };
     }
 
-    private boolean runTests() {
-        return true;
-    }
-
     private boolean copyProjectToContainer(Agent agent) {
         System.out.println("Copying project to container: " + agent.getContainerId());
         agentService.copyProjectToContainer(agent);
         return true;
+    }
+
+    private boolean buildProject(Agent agent) {
+        return agentService.buildProjectInContainer(agent);
+    }
+
+    private boolean runTests(Agent agent) {
+        return agentService.runTestsInContainer(agent);
     }
 }
