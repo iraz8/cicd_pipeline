@@ -19,6 +19,11 @@ public class JobExecutionService {
     public Boolean executeJob(Agent agent) {
         Job job = agent.getJob();
         return switch (job.getCommand()) {
+            case CLEAN -> {
+                System.out.println("Clean project ID: " + job.getProjectId());
+                agentService.cleanProjectInContainer(agent);
+                yield true;
+            }
             case BUILD -> {
                 System.out.println("Build project ID: " + job.getProjectId());
                 copyProjectToContainer(agent);
@@ -39,17 +44,16 @@ public class JobExecutionService {
         };
     }
 
-    private boolean copyProjectToContainer(Agent agent) {
+    private void copyProjectToContainer(Agent agent) {
         System.out.println("Copying project to container: " + agent.getContainerId());
         agentService.copyProjectToContainer(agent);
-        return true;
     }
 
-    private boolean buildProject(Agent agent) {
-        return agentService.buildProjectInContainer(agent);
+    private void buildProject(Agent agent) {
+        agentService.buildProjectInContainer(agent);
     }
 
-    private boolean runTests(Agent agent) {
-        return agentService.runTestsInContainer(agent);
+    private void runTests(Agent agent) {
+        agentService.runTestsInContainer(agent);
     }
 }

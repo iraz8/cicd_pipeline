@@ -51,6 +51,9 @@
                        onchange="updateHiddenInput(this)">
             </td>
             <td>
+                <button type="button" th:id="'button_CLEAN_' + ${project.id}" th:onclick="'runCommand(' + ${project.id} + ', \'CLEAN\')'">Clean</button>
+            </td>
+            <td>
                 <button type="button" th:id="'button_BUILD_' + ${project.id}" th:onclick="'runCommand(' + ${project.id} + ', \'BUILD\')'">Build</button>
             </td>
             <td>

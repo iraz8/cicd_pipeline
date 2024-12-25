@@ -156,6 +156,7 @@ public class AgentService {
     private void createTarFile(String sourceDirPath, String tarFilePath) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(tarFilePath);
              TarArchiveOutputStream tarOut = new TarArchiveOutputStream(fos)) {
+            tarOut.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
             Path sourceDir = Paths.get(sourceDirPath);
             Path parentDir = sourceDir.getParent();
             Files.walk(sourceDir).forEach(path -> {
@@ -243,17 +244,18 @@ public class AgentService {
         try {
             String checkPom = "test -f " + projectPath + "/pom.xml";
             String checkGradle = "test -f " + projectPath + "/build.gradle";
-            String checkMakefile = "test -f " + projectPath + "/Makefile";
+            String checkMakefile = "test -f " + projectPath + "/main.c";
 
             if (executeCommandInContainer(containerId, checkPom)) {
                 return "cd " + projectPath + " && mvn clean install -DskipTests";
             } else if (executeCommandInContainer(containerId, checkGradle)) {
-                return "cd " + projectPath + " && ./gradlew build";
+                return "cd " + projectPath + " && gradle build -x test";
             } else if (executeCommandInContainer(containerId, checkMakefile)) {
-                return "cd " + projectPath + " && make";
+                return "cd " + projectPath + " && gcc -o main main.c -lcunit";
             } else {
                 throw new UnsupportedOperationException("Unsupported project language: No recognizable build file found in " + projectPath);
             }
+
         } catch (Exception e) {
             throw new RuntimeException("Error checking build files in container", e);
         }
@@ -289,7 +291,25 @@ public class AgentService {
         }
 
         String projectPath = "/home/" + project.get().getName();
-        String testCommand = "cd " + projectPath + " && mvn test";
+        String testCommand;
+        try {
+            String checkPom = "test -f " + projectPath + "/pom.xml";
+            String checkGradle = "test -f " + projectPath + "/build.gradle";
+            String checkMakefile = "test -f " + projectPath + "/main.c";
+
+            if (executeCommandInContainer(containerId, checkPom)) {
+                testCommand = "cd " + projectPath + " && mvn test";
+            } else if (executeCommandInContainer(containerId, checkGradle)) {
+                testCommand = "cd " + projectPath + " && gradle test";
+            } else if (executeCommandInContainer(containerId, checkMakefile)) {
+                testCommand = "cd " + projectPath + " && gcc -o main *.c -lcunit && ./main";
+            } else {
+                throw new UnsupportedOperationException("Unsupported project language: No recognizable build file found in " + projectPath);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error checking build files in container", e);
+        }
 
         try {
             return executeCommandInContainer(containerId, testCommand);
@@ -298,4 +318,44 @@ public class AgentService {
             return false;
         }
     }
+
+    public void cleanProjectInContainer(Agent agent) {
+        System.out.println("Cleaning project in container: " + agent.getContainerId());
+        String containerId = agent.getContainerId();
+        Long projectId = agent.getJob().getProjectId();
+        Optional<Project> project = projectRepository.findById(projectId);
+        if (project.isEmpty()) {
+            System.out.println("Project not found: " + projectId);
+            return;
+        }
+
+        String projectPath = "/home/" + project.get().getName();
+        String cleanCommand;
+
+        try {
+            String checkPom = "test -f " + projectPath + "/pom.xml";
+            String checkGradle = "test -f " + projectPath + "/build.gradle";
+            String checkMakefile = "test -f " + projectPath + "/main.c";
+
+            if (executeCommandInContainer(containerId, checkPom)) {
+                cleanCommand = "cd " + projectPath + " && mvn clean";
+            } else if (executeCommandInContainer(containerId, checkGradle)) {
+                cleanCommand = "cd " + projectPath + " && gradle clean";
+            } else if (executeCommandInContainer(containerId, checkMakefile)) {
+                cleanCommand = "cd " + projectPath + " && rm -f *.o main";
+            } else {
+                throw new UnsupportedOperationException("Unsupported project language: No recognizable build file found in " + projectPath);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error checking build files in container", e);
+        }
+
+        try {
+            executeCommandInContainer(containerId, cleanCommand);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
