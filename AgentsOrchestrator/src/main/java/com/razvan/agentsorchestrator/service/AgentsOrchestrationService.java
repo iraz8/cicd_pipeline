@@ -61,7 +61,7 @@ public class AgentsOrchestrationService {
                     System.out.println("Assigned job to agent: " + agent.getName());
                     boolean result = jobExecutionService.executeJob(agent);
                     System.out.println("Job execution result for agent " + agent.getName() + ": " + result);
-                    jobStatusService.updateJobStatus(job.getJobId(), result ? "COMPLETED" : "FAILED");
+                    jobStatusService.updateJobStatus(job.getJobId(), result ? "COMPLETED" : "FAILED", job.getErrors());
                     agent.setJob(null);
                 }
             }

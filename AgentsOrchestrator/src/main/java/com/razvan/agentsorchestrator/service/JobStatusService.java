@@ -9,12 +9,18 @@ import java.util.Map;
 public class JobStatusService {
 
     private final Map<String, String> jobStatuses = new HashMap<>();
+    private final Map<String, String> jobErrors = new HashMap<>();
 
-    public void updateJobStatus(String jobId, String status) {
+    public void updateJobStatus(String jobId, String status, String errors) {
         jobStatuses.put(jobId, status);
+        jobErrors.put(jobId, errors);
     }
 
-    public String getJobStatus(Long projectId, String command, String jobId) {
+    public String getJobStatus(String jobId) {
         return jobStatuses.getOrDefault(jobId, "PENDING");
+    }
+
+    public String getJobErrors(String jobId) {
+        return jobErrors.getOrDefault(jobId, null);
     }
 }

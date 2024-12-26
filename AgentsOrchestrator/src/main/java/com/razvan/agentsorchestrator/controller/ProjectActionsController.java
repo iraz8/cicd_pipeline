@@ -3,6 +3,8 @@ package com.razvan.agentsorchestrator.controller;
 import com.razvan.agentsorchestrator.service.CommandsService;
 import com.razvan.agentsorchestrator.service.ProjectSettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -27,12 +29,20 @@ public class ProjectActionsController {
     }
 
     @PostMapping("/runCommand/{projectId}")
-    @ResponseBody
-    public Map<String, Object> runCommand(@PathVariable Long projectId, @RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> runCommand(@PathVariable Long projectId, @RequestBody Map<String, String> request) {
         String commandStr = request.get("command");
         String jobId = request.get("jobId");
-        return commandsService.executeCommand(projectId, commandStr, jobId);
+        try {
+            Map<String, Object> result = commandsService.executeCommand(projectId, commandStr, jobId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleException(Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
     }
 }
-
 

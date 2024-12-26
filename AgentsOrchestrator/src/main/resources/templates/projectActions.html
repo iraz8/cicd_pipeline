@@ -12,10 +12,16 @@
             background-color: yellow;
             color: black;
         }
+
+        .error {
+            background-color: red;
+            color: white;
+        }
     </style>
 </head>
 <body>
 <h1>Project Actions</h1>
+<div id="error-message" class="error" style="display: none;"></div>
 <table style="width: auto; table-layout: auto;">
     <thead>
     <tr>
@@ -49,55 +55,107 @@
 <div style="margin-top: 10px; text-align: right;">
     <button type="button" onclick="window.location.reload();">Refresh page</button>
 </div>
+
+<div id="errors-container" style="display: none;">
+    <h2>Errors</h2>
+    <div id="errors-section">
+        <ul id="errors-list"></ul>
+    </div>
+</div>
+
 <script>
     function runCommand(projectId, command) {
         const jobId = generateHashCode();
         const button = document.getElementById(`button_${command}_${projectId}`);
-        if (button) {
-            button.classList.add('in-progress');
-        }
+        const errorMessage = document.getElementById('error-message');
+        const errorsContainer = document.getElementById('errors-container');
+        const errorsList = document.getElementById('errors-list');
+
+        resetButtonColors(button);
+
+        setButtonInProgress(button);
+
         fetch(`/runCommand/${projectId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({command: command, jobId: jobId})
+            body: JSON.stringify({command, jobId})
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Project ID:', data.projectId, 'Command:', data.command, 'Job ID:', data.jobId);
-                if (data.projectId && data.command && data.jobId) {
-                    pollJobStatus(data.projectId, data.command, data.jobId);
-                }
-            })
-            .catch(error => console.error('Error:', error));
+            .then(response => response.json().then(data => ({status: response.status, body: data})))
+            .then(({status, body}) => handleResponse(status, body))
+            .catch(error => handleError(error, projectId, command, button, errorMessage, errorsList, errorsContainer));
     }
 
-    function generateHashCode() {
-        return Math.floor(Math.random() * 1e16).toString();
+    function resetButtonColors(currentButton) {
+        const row = currentButton.closest('tr');
+        const buttons = row.querySelectorAll('button');
+        buttons.forEach(btn => btn.classList.remove('success', 'error', 'in-progress'));
+    }
+
+    function setButtonInProgress(button) {
+        if (button) {
+            button.classList.add('in-progress');
+        }
+    }
+
+    function handleResponse(status, body) {
+        if (status >= 400) {
+            throw new Error(body.error || 'Unknown error');
+        }
+        if (body.projectId && body.command && body.jobId) {
+            pollJobStatus(body.projectId, body.command, body.jobId);
+        }
+    }
+
+    function handleError(error, projectId, command, button, errorMessage, errorsList, errorsContainer) {
+        errorMessage.textContent = error.message;
+        errorMessage.style.display = 'block';
+        if (button) {
+            button.classList.remove('in-progress');
+        }
+        const errorItem = document.createElement('li');
+        errorItem.textContent = `Project ID: ${projectId}, Command: ${command}, Error: ${error.message}`;
+        errorsList.appendChild(errorItem);
+        if (errorsList.children.length > 0) {
+            errorsContainer.style.display = 'block';
+        }
     }
 
     function pollJobStatus(projectId, command, jobId) {
         const intervalId = setInterval(() => {
             fetch(`/jobStatus/${projectId}/${command}/${jobId}`)
                 .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'COMPLETED') {
-                        clearInterval(intervalId);
-                        const button = document.getElementById(`button_${command}_${projectId}`);
-                        if (button) {
-                            button.classList.remove('in-progress');
-                            button.classList.add('success');
-                        } else {
-                            console.error('Button not found:', `button_${command}_${projectId}`);
-                        }
-                    }
-                })
-                .catch(error => {
-                    clearInterval(intervalId);
-                    console.error('Error:', error);
-                });
+                .then(data => handleJobStatus(data, projectId, command, intervalId))
+                .catch(() => clearInterval(intervalId));
         }, 1000);
+    }
+
+    function handleJobStatus(data, projectId, command, intervalId) {
+        const errorsContainer = document.getElementById('errors-container');
+        const errorsList = document.getElementById('errors-list');
+        if (data.status === 'COMPLETED') {
+            clearInterval(intervalId);
+            const button = document.getElementById(`button_${command}_${projectId}`);
+            if (button) {
+                button.classList.remove('in-progress');
+                if (data.errors) {
+                    button.classList.add('error');
+                    const errorItem = document.createElement('li');
+                    errorItem.textContent = `Project ID: ${projectId}, Command: ${command}, Error: ${data.errors}`;
+                    errorsList.appendChild(errorItem);
+                    if (errorsList.children.length > 0) {
+                        errorsContainer.style.display = 'block';
+                    }
+                } else {
+                    button.classList.add('success');
+                }
+            }
+        }
+    }
+
+    function generateHashCode() {
+        return Math.floor(Math.random() * 1e16).toString();
     }
 </script>
 </body>

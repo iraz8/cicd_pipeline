@@ -57,13 +57,12 @@ public class AgentService {
                     .awaitCompletion();
 
             return createAndStartContainer(dockerClient, agent);
-
-        } catch (DockerClientException | NotFoundException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
+            if (agent.getJob() != null) {
+                agent.getJob().setErrors(e.getMessage());
+            }
             throw new RuntimeException(e);
         }
-        return null;
     }
 
     private String createAndStartContainer(DockerClient dockerClient, Agent agent) throws InterruptedException {
@@ -97,6 +96,9 @@ public class AgentService {
                 }
                 dockerClient.removeContainerCmd(containerId).exec();
                 System.out.println("Stopped and removed existing container: " + containerId);
+                if (agent.getJob() != null) {
+                    agent.getJob().setErrors(e.getMessage());
+                }
             }
         }
         return null;
@@ -142,12 +144,14 @@ public class AgentService {
 
         } catch (Exception e) {
             e.printStackTrace();
+            agent.getJob().setErrors(e.getMessage());
         } finally {
             if (tempTarFile != null) {
                 try {
                     Files.delete(tempTarFile);
                 } catch (IOException e) {
                     e.printStackTrace();
+                    agent.getJob().setErrors(e.getMessage());
                 }
             }
         }
@@ -236,6 +240,7 @@ public class AgentService {
             return true;
         } catch (Exception e) {
             e.printStackTrace();
+            agent.getJob().setErrors(e.getMessage());
             return false;
         }
     }
@@ -314,12 +319,14 @@ public class AgentService {
             }
 
         } catch (Exception e) {
+            agent.getJob().setErrors(e.getMessage());
             throw new RuntimeException("Error checking build files in container", e);
         }
 
         try {
             return executeCommandInContainer(containerId, testCommand);
         } catch (Exception e) {
+            agent.getJob().setErrors(e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -336,7 +343,7 @@ public class AgentService {
         }
 
         String projectPath = "/home/" + project.get().getName();
-        String cleanCommand;
+        String cleanCommand ="";
 
         try {
             String checkPom = "test -f " + projectPath + "/pom.xml";
@@ -357,12 +364,14 @@ public class AgentService {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Error checking build files in container", e);
+            agent.getJob().setErrors(e.getMessage());
+            System.out.println("Error checking build files in container" + e);
         }
 
         try {
             executeCommandInContainer(containerId, cleanCommand);
         } catch (Exception e) {
+            agent.getJob().setErrors(e.getMessage());
             e.printStackTrace();
         }
     }
