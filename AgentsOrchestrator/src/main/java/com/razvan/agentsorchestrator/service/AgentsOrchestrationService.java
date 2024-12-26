@@ -51,7 +51,7 @@ public class AgentsOrchestrationService {
         System.out.println("Updated agents number to: " + newNumber);
     }
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 5000)
     public void assignJobsToAgents() {
         for (Agent agent : agents) {
             if (!agent.hasJobAssigned() && !jobQueueService.getProjectQueue().isEmpty()) {
@@ -61,7 +61,7 @@ public class AgentsOrchestrationService {
                     System.out.println("Assigned job to agent: " + agent.getName());
                     boolean result = jobExecutionService.executeJob(agent);
                     System.out.println("Job execution result for agent " + agent.getName() + ": " + result);
-                    jobStatusService.updateJobStatus(job.getJobId(), result ? "COMPLETED" : "FAILED", job.getErrors());
+                    jobStatusService.updateJobStatus(job.getJobId(), result ? "COMPLETED" : "FAILED", job.getErrors(), job.getOutput());
                     agent.setJob(null);
                 }
             }

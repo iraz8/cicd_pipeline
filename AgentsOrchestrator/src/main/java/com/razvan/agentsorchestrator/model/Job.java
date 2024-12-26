@@ -12,4 +12,6 @@ public class Job {
     private String jobId;
     @Setter
     private String errors;
+    @Setter
+    private String output;
 }

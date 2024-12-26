@@ -1,7 +1,6 @@
 package com.razvan.agentsorchestrator.controller;
 
 import com.razvan.agentsorchestrator.service.JobStatusService;
-import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,9 +23,11 @@ public class JobStatusController {
     public Map<String, String> getJobStatus(@PathVariable String jobId) {
         String status = jobStatusService.getJobStatus(jobId);
         String errors = jobStatusService.getJobErrors(jobId);
+        String output = jobStatusService.getJobOutput(jobId);
         Map<String, String> response = new HashMap<>();
         response.put("status", status);
         response.put("errors", errors);
+        response.put("output", output);
         return response;
     }
 }

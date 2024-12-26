@@ -5,7 +5,6 @@ import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.exception.ConflictException;
-import com.github.dockerjava.api.exception.DockerClientException;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
@@ -25,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -217,7 +217,7 @@ public class AgentService {
         }
 
         String projectPath = "/home/" + project.get().getName();
-        String buildCommand = getBuildCommand(agent.getContainerId(), projectPath);
+        String buildCommand = addOutputRedirectionToFile(getBuildCommand(agent.getContainerId(), projectPath), projectPath);
 
         try {
             String[] command = {"/bin/sh", "-c", buildCommand};
@@ -246,6 +246,7 @@ public class AgentService {
     }
 
     private String getBuildCommand(String containerId, String projectPath) {
+        String buildCommand;
         try {
             String checkPom = "test -f " + projectPath + "/pom.xml";
             String checkGradle = "test -f " + projectPath + "/build.gradle";
@@ -253,13 +254,13 @@ public class AgentService {
             String checkMainCSource = "test -f " + projectPath + "/main.c";
 
             if (executeCommandInContainer(containerId, checkPom)) {
-                return "cd " + projectPath + " && mvn clean install -DskipTests";
+                buildCommand = "cd " + projectPath + " && mvn install -DskipTests";
             } else if (executeCommandInContainer(containerId, checkGradle)) {
-                return "cd " + projectPath + " && gradle build -x test";
+                buildCommand = "cd " + projectPath + " && gradle build -x test";
             } else if (executeCommandInContainer(containerId, checkMakefile)) {
-                return "cd " + projectPath + " && make";
+                buildCommand = "cd " + projectPath + " && make";
             } else if (executeCommandInContainer(containerId, checkMainCSource)) {
-                return "cd " + projectPath + " && gcc -o main main.c -lcunit";
+                buildCommand = "cd " + projectPath + " && gcc -o main main.c -lcunit";
             } else {
                 throw new UnsupportedOperationException("Unsupported project language: No recognizable build file found in " + projectPath);
             }
@@ -267,6 +268,7 @@ public class AgentService {
         } catch (Exception e) {
             throw new RuntimeException("Error checking build files in container", e);
         }
+        return buildCommand;
     }
 
     private boolean executeCommandInContainer(String containerId, String command) throws Exception {
@@ -324,7 +326,7 @@ public class AgentService {
         }
 
         try {
-            return executeCommandInContainer(containerId, testCommand);
+            return executeCommandInContainer(containerId, addOutputRedirectionToFile(testCommand, projectPath));
         } catch (Exception e) {
             agent.getJob().setErrors(e.getMessage());
             e.printStackTrace();
@@ -343,7 +345,7 @@ public class AgentService {
         }
 
         String projectPath = "/home/" + project.get().getName();
-        String cleanCommand ="";
+        String cleanCommand = "";
 
         try {
             String checkPom = "test -f " + projectPath + "/pom.xml";
@@ -369,11 +371,54 @@ public class AgentService {
         }
 
         try {
-            executeCommandInContainer(containerId, cleanCommand);
+            executeCommandInContainer(containerId, addOutputRedirectionToFile(cleanCommand, projectPath));
         } catch (Exception e) {
             agent.getJob().setErrors(e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public void readOutput(Agent agent) {
+        System.out.println("Reading output for project in container: " + agent.getContainerId());
+        Long projectId = agent.getJob().getProjectId();
+        Optional<Project> project = projectRepository.findById(projectId);
+        if (project.isEmpty()) {
+            System.out.println("Project not found: " + projectId);
+            return;
+        }
+
+        String projectPath = "/home/" + project.get().getName();
+        String outputPath = projectPath + "/output.log";
+        String containerId = agent.getContainerId();
+
+        try {
+            String[] command = {"/bin/sh", "-c", "cat " + outputPath};
+
+            String execId = dockerClient.execCreateCmd(containerId)
+                    .withCmd(command)
+                    .withAttachStdout(true)
+                    .withAttachStderr(true)
+                    .exec()
+                    .getId();
+
+            StringBuilder output = new StringBuilder();
+            dockerClient.execStartCmd(execId).exec(new ResultCallback.Adapter<>() {
+                @Override
+                public void onNext(Frame item) {
+                    output.append(new String(item.getPayload(), StandardCharsets.UTF_8));
+                }
+            }).awaitCompletion();
+
+            agent.getJob().setOutput(output.toString());
+            System.out.println("Output read successfully for project ID: " + projectId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            agent.getJob().setErrors(e.getMessage());
+        }
+    }
+
+    private String addOutputRedirectionToFile(String command, String projectPath) {
+        return command + " > " + projectPath + "/output.log " + "2>&1";
     }
 
 }

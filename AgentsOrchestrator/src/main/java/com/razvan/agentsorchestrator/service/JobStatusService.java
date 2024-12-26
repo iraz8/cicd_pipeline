@@ -10,10 +10,12 @@ public class JobStatusService {
 
     private final Map<String, String> jobStatuses = new HashMap<>();
     private final Map<String, String> jobErrors = new HashMap<>();
+    private final Map<String, String> jobOutput = new HashMap<>();
 
-    public void updateJobStatus(String jobId, String status, String errors) {
+    public void updateJobStatus(String jobId, String status, String errors, String output) {
         jobStatuses.put(jobId, status);
         jobErrors.put(jobId, errors);
+        jobOutput.put(jobId, output);
     }
 
     public String getJobStatus(String jobId) {
@@ -22,5 +24,9 @@ public class JobStatusService {
 
     public String getJobErrors(String jobId) {
         return jobErrors.getOrDefault(jobId, null);
+    }
+
+    public String getJobOutput(String jobId) {
+        return jobOutput.getOrDefault(jobId, null);
     }
 }

@@ -17,49 +17,97 @@
             background-color: red;
             color: white;
         }
+
+        .delimiter {
+            text-align: center;
+            font-size: 24px;
+            line-height: 1;
+        }
+
     </style>
 </head>
 <body>
 <h1>Project Actions</h1>
 <div id="error-message" class="error" style="display: none;"></div>
-<table style="width: auto; table-layout: auto;">
-    <thead>
-    <tr>
-        <th>Project Name</th>
-        <th>Clean</th>
-        <th>Build</th>
-        <th>Run Tests</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="project : ${projects}">
-        <td th:text="${project.name}"></td>
-        <td>
-            <button type="button" th:id="'button_CLEAN_' + ${project.id}"
-                    th:onclick="'runCommand(' + ${project.id} + ', \'CLEAN\')'">Clean
-            </button>
-        </td>
-        <td>
-            <button type="button" th:id="'button_BUILD_' + ${project.id}"
-                    th:onclick="'runCommand(' + ${project.id} + ', \'BUILD\')'">Build
-            </button>
-        </td>
-        <td>
-            <button type="button" th:id="'button_RUN_TESTS_' + ${project.id}"
-                    th:onclick="'runCommand(' + ${project.id} + ', \'RUN_TESTS\')'">Run tests
-            </button>
-        </td>
-    </tr>
-    </tbody>
-</table>
-<div style="margin-top: 10px; text-align: right;">
-    <button type="button" onclick="window.location.reload();">Refresh page</button>
-</div>
+<div class="container">
+    <div class="table-container">
+        <table style="width: auto; table-layout: auto;">
+            <thead>
+            <tr>
+                <th>Project Name</th>
+                <th>Clean</th>
+                <th>Fetch</th>
+                <th>Build</th>
+                <th>Run Tests</th>
+                <th>Last output</th>
+                <th class="delimiter"></th>
+                <th>All steps</th>
+                <th class="delimiter"></th>
+                <th align="left">&nbsp; &nbsp; Terminal</th>
+                <th></th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="project : ${projects}">
+                <td th:text="${project.name}"></td>
+                <td>
+                    <button type="button" th:id="'button_CLEAN_' + ${project.id}"
+                            th:onclick="'runCommand(' + ${project.id} + ', \'CLEAN\')'">Clean
+                    </button>
+                </td>
+                <td>
+                    <button type="button" th:id="'button_FETCH_' + ${project.id}"
+                            th:onclick="'runCommand(' + ${project.id} + ', \'FETCH\')'">Fetch
+                    </button>
+                </td>
+                <td>
+                    <button type="button" th:id="'button_BUILD_' + ${project.id}"
+                            th:onclick="'runCommand(' + ${project.id} + ', \'BUILD\')'">Build
+                    </button>
+                </td>
+                <td>
+                    <button type="button" th:id="'button_RUN_TESTS_' + ${project.id}"
+                            th:onclick="'runCommand(' + ${project.id} + ', \'RUN_TESTS\')'">Run tests
+                    </button>
+                </td>
+                <td>
+                    <button type="button" th:id="'button_LAST_OUTPUT_' + ${project.id}"
+                            th:onclick="'runCommand(' + ${project.id} + ', \'LAST_OUTPUT\')'">Last output
+                    </button>
+                </td>
+                <td class="delimiter">|</td>
+                <td>
+                    <button type="button" th:id="'button_FULL_STEPS_' + ${project.id}"
+                            th:onclick="'runCommand(' + ${project.id} + ', \'FULL_STEPS\')'">Full steps
+                    </button>
+                </td>
+                <td class="delimiter">|</td>
+                <td>
+                    <button type="button" th:id="'button_OPEN_TERMINAL_' + ${project.id}"
+                            th:onclick="'openTerminal(' + ${project.id} + ')'">Open Terminal
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div style="margin-top: 10px; text-align: left;">
+            <button type="button" onclick="window.location.reload();">Refresh page</button>
+        </div>
 
-<div id="errors-container" style="display: none;">
-    <h2>Errors</h2>
-    <div id="errors-section">
-        <ul id="errors-list"></ul>
+        <div id="errors-container" style="display: none;">
+            <h2>Errors</h2>
+            <div id="errors-section">
+                <ul id="errors-list"></ul>
+            </div>
+        </div>
+
+        <div id="output-container" style="display: none;">
+            <h2>Output</h2>
+            <div id="output-section">
+                <ul id="output-list"></ul>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -85,6 +133,70 @@
             .then(response => response.json().then(data => ({status: response.status, body: data})))
             .then(({status, body}) => handleResponse(status, body))
             .catch(error => handleError(error, projectId, command, button, errorMessage, errorsList, errorsContainer));
+    }
+
+    function openTerminal(projectId) {
+        const button = document.getElementById(`button_OPEN_TERMINAL_${projectId}`);
+        const row = button.closest('tr');
+        let terminalContainer = row.querySelector('.terminal-container');
+
+        if (!terminalContainer) {
+            const newCell = document.createElement('td');
+            row.appendChild(newCell);
+
+            terminalContainer = document.createElement('div');
+            terminalContainer.className = 'terminal-container';
+            terminalContainer.style.display = 'none';
+            terminalContainer.style.alignItems = 'center';
+            newCell.appendChild(terminalContainer);
+
+            const terminalInput = document.createElement('input');
+            terminalInput.type = 'text';
+            terminalInput.className = 'terminal-input';
+            terminalInput.style.width = '70%';
+            terminalInput.style.marginRight = '5px';
+            terminalInput.placeholder = 'Enter terminal command here...';
+            terminalContainer.appendChild(terminalInput);
+
+            const submitButton = document.createElement('button');
+            submitButton.type = 'button';
+            submitButton.className = 'submit-button';
+            submitButton.textContent = 'Submit command';
+            submitButton.style.transform = 'scale(0.7)';
+            submitButton.onclick = () => submitTerminalCommand(projectId, terminalInput.value);
+            terminalContainer.appendChild(submitButton);
+        }
+
+        const isVisible = terminalContainer.style.display === 'inline-flex';
+        terminalContainer.style.display = isVisible ? 'none' : 'inline-flex';
+        button.textContent = isVisible ? 'Open Terminal' : 'Close Terminal';
+        if (!isVisible) {
+            terminalContainer.querySelector('.terminal-input').focus();
+        }
+    }
+
+    function submitTerminalCommand(projectId, command) {
+        command = command.trim().toUpperCase();
+        const validCommands = ['FETCH', 'BUILD', 'RUN_TESTS', 'CLEAN', 'LAST_OUTPUT', 'FULL_STEPS'];
+        const terminalInput = document.querySelector(`#button_OPEN_TERMINAL_${projectId}`).closest('tr').querySelector('.terminal-input');
+        const invalidCommandMessage = document.createElement('td');
+        invalidCommandMessage.className = 'invalid-command-message';
+        invalidCommandMessage.style.color = 'red';
+        invalidCommandMessage.textContent = 'Invalid command!';
+
+        const existingMessage = terminalInput.closest('tr').querySelector('.invalid-command-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+
+        if (!validCommands.includes(command)) {
+            terminalInput.style.borderColor = 'red';
+            terminalInput.closest('tr').appendChild(invalidCommandMessage);
+            return;
+        }
+
+        terminalInput.style.borderColor = '';
+        runCommand(projectId, command);
     }
 
     function resetButtonColors(currentButton) {
@@ -134,6 +246,9 @@
     function handleJobStatus(data, projectId, command, intervalId) {
         const errorsContainer = document.getElementById('errors-container');
         const errorsList = document.getElementById('errors-list');
+        const outputContainer = document.getElementById('output-container');
+        const outputList = document.getElementById('output-list');
+
         if (data.status === 'COMPLETED') {
             clearInterval(intervalId);
             const button = document.getElementById(`button_${command}_${projectId}`);
@@ -142,13 +257,21 @@
                 if (data.errors) {
                     button.classList.add('error');
                     const errorItem = document.createElement('li');
-                    errorItem.textContent = `Project ID: ${projectId}, Command: ${command}, Error: ${data.errors}`;
+                    errorItem.innerHTML = `Project ID: ${projectId}<br>Command: ${command}<br>Error: <br></br>${data.errors.replace(/\n/g, '<br>')}`;
                     errorsList.appendChild(errorItem);
                     if (errorsList.children.length > 0) {
                         errorsContainer.style.display = 'block';
                     }
                 } else {
                     button.classList.add('success');
+                }
+                if (data.output) {
+                    const outputItem = document.createElement('li');
+                    outputItem.innerHTML = `Project ID: ${projectId}<br>Command: ${command}<br>Output: <br>${data.output.replace(/\n/g, '<br>')}`;
+                    outputList.appendChild(outputItem);
+                    if (outputList.children.length > 0) {
+                        outputContainer.style.display = 'block';
+                    }
                 }
             }
         }

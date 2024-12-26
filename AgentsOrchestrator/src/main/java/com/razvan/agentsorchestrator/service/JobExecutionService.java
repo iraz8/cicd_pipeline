@@ -19,6 +19,11 @@ public class JobExecutionService {
     public Boolean executeJob(Agent agent) {
         Job job = agent.getJob();
         return switch (job.getCommand()) {
+            case FETCH -> {
+                System.out.println("Fetch project ID: " + job.getProjectId());
+                agentService.copyProjectToContainer(agent);
+                yield true;
+            }
             case CLEAN -> {
                 System.out.println("Clean project ID: " + job.getProjectId());
                 agentService.cleanProjectInContainer(agent);
@@ -26,15 +31,27 @@ public class JobExecutionService {
             }
             case BUILD -> {
                 System.out.println("Build project ID: " + job.getProjectId());
-                copyProjectToContainer(agent);
-                buildProject(agent);
+                agentService.buildProjectInContainer(agent);
                 yield true;
             }
             case RUN_TESTS -> {
                 System.out.println("Run tests project ID: " + job.getProjectId());
-                copyProjectToContainer(agent);
-                buildProject(agent);
-                runTests(agent);
+                agentService.runTestsInContainer(agent);
+                yield true;
+            }
+            case LAST_OUTPUT -> {
+                System.out.println("Read output project ID: " + job.getProjectId());
+                agentService.readOutput(agent);
+                yield true;
+            }
+            case FULL_STEPS -> {
+                System.out.println("Full steps project ID: " + job.getProjectId());
+                agentService.cleanProjectInContainer(agent);
+                agent.getJob().setErrors(null);
+                agentService.copyProjectToContainer(agent);
+                agentService.buildProjectInContainer(agent);
+                agentService.runTestsInContainer(agent);
+                agentService.readOutput(agent);
                 yield true;
             }
             default -> {
@@ -42,18 +59,5 @@ public class JobExecutionService {
                 yield false;
             }
         };
-    }
-
-    private void copyProjectToContainer(Agent agent) {
-        System.out.println("Copying project to container: " + agent.getContainerId());
-        agentService.copyProjectToContainer(agent);
-    }
-
-    private void buildProject(Agent agent) {
-        agentService.buildProjectInContainer(agent);
-    }
-
-    private void runTests(Agent agent) {
-        agentService.runTestsInContainer(agent);
     }
 }

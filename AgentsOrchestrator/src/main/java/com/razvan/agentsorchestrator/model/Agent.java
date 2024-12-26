@@ -1,6 +1,5 @@
 package com.razvan.agentsorchestrator.model;
 
-import com.razvan.agentsorchestrator.service.JobExecutionService;
 import lombok.Getter;
 import lombok.Setter;
 

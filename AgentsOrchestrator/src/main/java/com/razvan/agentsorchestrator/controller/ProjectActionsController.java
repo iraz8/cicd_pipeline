@@ -1,5 +1,6 @@
 package com.razvan.agentsorchestrator.controller;
 
+import com.razvan.agentsorchestrator.model.Commands;
 import com.razvan.agentsorchestrator.service.CommandsService;
 import com.razvan.agentsorchestrator.service.ProjectSettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -24,6 +27,9 @@ public class ProjectActionsController {
 
     @GetMapping("/projectActions")
     public String projectActions(Model model) {
+        if (projectSettingsService.getActiveProjects().isEmpty()) {
+            return "errorPage";
+        }
         model.addAttribute("projects", projectSettingsService.getActiveProjects());
         return "projectActions";
     }
@@ -43,6 +49,13 @@ public class ProjectActionsController {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+    }
+
+    @GetMapping("/commands")
+    public List<String> getCommands() {
+        return Arrays.stream(Commands.values())
+                .map(Enum::name)
+                .toList();
     }
 }
 

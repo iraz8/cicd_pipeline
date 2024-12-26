@@ -25,7 +25,7 @@ public class CommandsService {
         response.put("command", command);
         response.put("jobId", jobId);
 
-        Job job = new Job(projectId, command, jobId, null);
+        Job job = new Job(projectId, command, jobId, null, null);
         jobQueueService.addJob(job);
 
         return response;
