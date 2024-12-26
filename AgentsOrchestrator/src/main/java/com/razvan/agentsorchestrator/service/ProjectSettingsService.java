@@ -23,6 +23,10 @@ public class ProjectSettingsService {
         return projectRepository.findAll();
     }
 
+    public List<Project> getActiveProjects() {
+        return projectRepository.findByActive(true);
+    }
+
     public void saveProjectSettings(Map<String, String> params) {
         Map<Long, Boolean> projectSettings = new HashMap<>();
         for (Map.Entry<String, String> entry : params.entrySet()) {

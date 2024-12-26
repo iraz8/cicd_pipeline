@@ -2,16 +2,6 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Project Settings</title>
-    <style>
-        .success {
-            background-color: green;
-            color: white;
-        }
-        .in-progress {
-            background-color: yellow;
-            color: black;
-        }
-    </style>
     <script>
         function updateHiddenInput(checkbox) {
             const hiddenInput = document.getElementById('hidden_' + checkbox.name);
@@ -40,7 +30,6 @@
         <tr>
             <th>Project Name</th>
             <th>Active</th>
-            <th>Actions</th>
         </tr>
         </thead>
         <tbody>
@@ -50,15 +39,6 @@
                 <input type="checkbox" th:checked="${project.active}" th:name="'active_' + ${project.id}" value="on"
                        onchange="updateHiddenInput(this)">
             </td>
-            <td>
-                <button type="button" th:id="'button_CLEAN_' + ${project.id}" th:onclick="'runCommand(' + ${project.id} + ', \'CLEAN\')'">Clean</button>
-            </td>
-            <td>
-                <button type="button" th:id="'button_BUILD_' + ${project.id}" th:onclick="'runCommand(' + ${project.id} + ', \'BUILD\')'">Build</button>
-            </td>
-            <td>
-                <button type="button" th:id="'button_RUN_TESTS_' + ${project.id}" th:onclick="'runCommand(' + ${project.id} + ', \'RUN_TESTS\')'">Run tests</button>
-            </td>
         </tr>
         </tbody>
     </table>
@@ -67,56 +47,5 @@
         <button type="submit">Save</button>
     </div>
 </form>
-<script>
-    function runCommand(projectId, command) {
-        const jobId = generateHashCode();
-        const button = document.getElementById(`button_${command}_${projectId}`);
-        if (button) {
-            button.classList.add('in-progress');
-        }
-        fetch(`/runCommand/${projectId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ command: command, jobId: jobId })
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Project ID:', data.projectId, 'Command:', data.command, 'Job ID:', data.jobId);
-                if (data.projectId && data.command && data.jobId) {
-                    pollJobStatus(data.projectId, data.command, data.jobId);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    function generateHashCode() {
-        return Math.floor(Math.random() * 1e16).toString();
-    }
-
-    function pollJobStatus(projectId, command, jobId) {
-        const intervalId = setInterval(() => {
-            fetch(`/jobStatus/${projectId}/${command}/${jobId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'COMPLETED') {
-                        clearInterval(intervalId);
-                        const button = document.getElementById(`button_${command}_${projectId}`);
-                        if (button) {
-                            button.classList.remove('in-progress');
-                            button.classList.add('success');
-                        } else {
-                            console.error('Button not found:', `button_${command}_${projectId}`);
-                        }
-                    }
-                })
-                .catch(error => {
-                    clearInterval(intervalId);
-                    console.error('Error:', error);
-                });
-        }, 1000);
-    }
-</script>
 </body>
 </html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Project Actions</title>
+    <style>
+        .success {
+            background-color: green;
+            color: white;
+        }
+
+        .in-progress {
+            background-color: yellow;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+<h1>Project Actions</h1>
+<table style="width: auto; table-layout: auto;">
+    <thead>
+    <tr>
+        <th>Project Name</th>
+        <th>Clean</th>
+        <th>Build</th>
+        <th>Run Tests</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="project : ${projects}">
+        <td th:text="${project.name}"></td>
+        <td>
+            <button type="button" th:id="'button_CLEAN_' + ${project.id}"
+                    th:onclick="'runCommand(' + ${project.id} + ', \'CLEAN\')'">Clean
+            </button>
+        </td>
+        <td>
+            <button type="button" th:id="'button_BUILD_' + ${project.id}"
+                    th:onclick="'runCommand(' + ${project.id} + ', \'BUILD\')'">Build
+            </button>
+        </td>
+        <td>
+            <button type="button" th:id="'button_RUN_TESTS_' + ${project.id}"
+                    th:onclick="'runCommand(' + ${project.id} + ', \'RUN_TESTS\')'">Run tests
+            </button>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<div style="margin-top: 10px; text-align: right;">
+    <button type="button" onclick="window.location.reload();">Refresh page</button>
+</div>
+<script>
+    function runCommand(projectId, command) {
+        const jobId = generateHashCode();
+        const button = document.getElementById(`button_${command}_${projectId}`);
+        if (button) {
+            button.classList.add('in-progress');
+        }
+        fetch(`/runCommand/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({command: command, jobId: jobId})
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Project ID:', data.projectId, 'Command:', data.command, 'Job ID:', data.jobId);
+                if (data.projectId && data.command && data.jobId) {
+                    pollJobStatus(data.projectId, data.command, data.jobId);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function generateHashCode() {
+        return Math.floor(Math.random() * 1e16).toString();
+    }
+
+    function pollJobStatus(projectId, command, jobId) {
+        const intervalId = setInterval(() => {
+            fetch(`/jobStatus/${projectId}/${command}/${jobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'COMPLETED') {
+                        clearInterval(intervalId);
+                        const button = document.getElementById(`button_${command}_${projectId}`);
+                        if (button) {
+                            button.classList.remove('in-progress');
+                            button.classList.add('success');
+                        } else {
+                            console.error('Button not found:', `button_${command}_${projectId}`);
+                        }
+                    }
+                })
+                .catch(error => {
+                    clearInterval(intervalId);
+                    console.error('Error:', error);
+                });
+        }, 1000);
+    }
+</script>
+</body>
+</html>
