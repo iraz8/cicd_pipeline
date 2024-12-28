@@ -1,0 +1,2 @@
+demo-tests-app-maven
+CLEAN, FETCH, BUILD, RUN_TESTS, LAST_OUTPUT

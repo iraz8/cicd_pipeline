@@ -111,7 +111,57 @@
     </div>
 </div>
 
+<div>
+    <button type="button" onclick="document.getElementById('file-input').click();">Load actions from file...</button>
+    <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(event)">
+    <button type="button" id="submit-button" style="display: none;" onclick="handleSubmit()">Submit</button>
+</div>
+
 <script>
+    let selectedFile;
+
+    function handleFileSelect(event) {
+        selectedFile = event.target.files[0];
+        if (selectedFile) {
+            document.getElementById('submit-button').style.display = 'inline';
+        }
+    }
+
+    function handleSubmit() {
+        if (!selectedFile) {
+            alert('No file selected');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const lines = event.target.result.split('\n');
+            if (lines.length < 2) {
+                alert('Invalid file format');
+                return;
+            }
+
+            const projectName = lines[0].trim().toUpperCase();
+            const commands = lines[1].trim().toUpperCase().split(',');
+
+            const project = Array.from(document.querySelectorAll('tbody tr'))
+                .find(row => row.querySelector('td').textContent.trim().toUpperCase() === projectName);
+
+            if (!project) {
+                alert('Project not found');
+                return;
+            }
+
+            const projectId = project.querySelector('button').id.split('_')[2];
+
+            commands.forEach(command => {
+                runCommand(projectId, command.trim().toUpperCase());
+            });
+        };
+
+        reader.readAsText(selectedFile);
+    }
+
     function runCommand(projectId, command) {
         const jobId = generateHashCode();
         const button = document.getElementById(`button_${command}_${projectId}`);

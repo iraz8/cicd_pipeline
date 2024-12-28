@@ -14,12 +14,10 @@ import java.util.Optional;
 @RestController
 public class NewCommitNotifierController {
 
-    private final JobQueueService jobQueueService;
     private final ProjectRepository projectRepository;
 
     @Autowired
     public NewCommitNotifierController(JobQueueService jobQueueService, ProjectRepository projectRepository) {
-        this.jobQueueService = jobQueueService;
         this.projectRepository = projectRepository;
     }
 
