@@ -28,6 +28,8 @@
 </head>
 <body>
 <h1>Project Actions</h1>
+<br>
+
 <div id="error-message" class="error" style="display: none;"></div>
 <div class="container">
     <div class="table-container">
@@ -53,27 +55,27 @@
                 <td th:text="${project.name}"></td>
                 <td>
                     <button type="button" th:id="'button_CLEAN_' + ${project.id}"
-                            th:onclick="'runCommand(' + ${project.id} + ', \'CLEAN\')'">Clean
+                            th:onclick="'resetAndRunCommand(' + ${project.id} + ', \'CLEAN\')'">Clean
                     </button>
                 </td>
                 <td>
                     <button type="button" th:id="'button_FETCH_' + ${project.id}"
-                            th:onclick="'runCommand(' + ${project.id} + ', \'FETCH\')'">Fetch
+                            th:onclick="'resetAndRunCommand(' + ${project.id} + ', \'FETCH\')'">Fetch
                     </button>
                 </td>
                 <td>
                     <button type="button" th:id="'button_BUILD_' + ${project.id}"
-                            th:onclick="'runCommand(' + ${project.id} + ', \'BUILD\')'">Build
+                            th:onclick="'resetAndRunCommand(' + ${project.id} + ', \'BUILD\')'">Build
                     </button>
                 </td>
                 <td>
                     <button type="button" th:id="'button_RUN_TESTS_' + ${project.id}"
-                            th:onclick="'runCommand(' + ${project.id} + ', \'RUN_TESTS\')'">Run tests
+                            th:onclick="'resetAndRunCommand(' + ${project.id} + ', \'RUN_TESTS\')'">Run tests
                     </button>
                 </td>
                 <td>
                     <button type="button" th:id="'button_LAST_OUTPUT_' + ${project.id}"
-                            th:onclick="'runCommand(' + ${project.id} + ', \'LAST_OUTPUT\')'">Last output
+                            th:onclick="'resetAndRunCommand(' + ${project.id} + ', \'LAST_OUTPUT\')'">Last output
                     </button>
                 </td>
                 <td class="delimiter">|</td>
@@ -91,9 +93,6 @@
             </tr>
             </tbody>
         </table>
-        <div style="margin-top: 10px; text-align: left;">
-            <button type="button" onclick="window.location.reload();">Refresh page</button>
-        </div>
 
         <div id="errors-container" style="display: none;">
             <h2>Errors</h2>
@@ -110,13 +109,17 @@
         </div>
     </div>
 </div>
-
+<br>
 <div>
     <button type="button" onclick="document.getElementById('file-input').click();">Load actions from file...</button>
     <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(event)">
     <button type="button" id="submit-button" style="display: none;" onclick="handleSubmit()">Submit</button>
 </div>
-
+<br>
+<div style="margin-top: 10px; text-align: left;">
+    <button type="button" onclick="window.location.href='/';">Back</button>
+    <button type="button" onclick="window.location.reload();">Refresh</button>
+</div>
 <script>
     let selectedFile;
 
@@ -134,7 +137,7 @@
         }
 
         const reader = new FileReader();
-        reader.onload = function(event) {
+        reader.onload = function (event) {
             const lines = event.target.result.split('\n');
             if (lines.length < 2) {
                 alert('Invalid file format');
@@ -154,12 +157,20 @@
 
             const projectId = project.querySelector('button').id.split('_')[2];
 
-            commands.forEach(command => {
-                runCommand(projectId, command.trim().toUpperCase());
+            commands.forEach((command, index) => {
+                setTimeout(() => {
+                    runCommand(projectId, command.trim().toUpperCase());
+                }, index * 200);
             });
         };
 
         reader.readAsText(selectedFile);
+    }
+
+    function resetAndRunCommand(projectId, command) {
+        const button = document.getElementById(`button_${command}_${projectId}`);
+        resetAllButtonColors(button);
+        runCommand(projectId, command);
     }
 
     function runCommand(projectId, command) {
@@ -213,7 +224,10 @@
             submitButton.className = 'submit-button';
             submitButton.textContent = 'Submit command';
             submitButton.style.transform = 'scale(0.7)';
-            submitButton.onclick = () => submitTerminalCommand(projectId, terminalInput.value);
+            submitButton.onclick = () => {
+                resetAllButtonColors(button);
+                submitTerminalCommand(projectId, terminalInput.value);
+            };
             terminalContainer.appendChild(submitButton);
         }
 
@@ -249,10 +263,14 @@
         runCommand(projectId, command);
     }
 
-    function resetButtonColors(currentButton) {
+    function resetAllButtonColors(currentButton) {
         const row = currentButton.closest('tr');
         const buttons = row.querySelectorAll('button');
         buttons.forEach(btn => btn.classList.remove('success', 'error', 'in-progress'));
+    }
+
+    function resetButtonColors(currentButton) {
+        currentButton.classList.remove('success', 'error', 'in-progress');
     }
 
     function setButtonInProgress(button) {
@@ -307,7 +325,7 @@
                 if (data.errors) {
                     button.classList.add('error');
                     const errorItem = document.createElement('li');
-                    errorItem.innerHTML = `Project ID: ${projectId}<br>Command: ${command}<br>Error: <br></br>${data.errors.replace(/\n/g, '<br>')}`;
+                    errorItem.innerHTML = `Project ID: ${projectId}<br>Command: ${command}<br>Error: <>${data.errors.replace(/\n/g, '<br>')}`;
                     errorsList.appendChild(errorItem);
                     if (errorsList.children.length > 0) {
                         errorsContainer.style.display = 'block';

@@ -23,7 +23,11 @@ public class Agent {
 
     public void setJob(Job job) {
         this.job = job;
-        System.out.println("Job assigned to agent " + name + ": " + job);
+        if (job != null) {
+            System.out.println("Job assigned to agent " + name + ": Job Id: " + job.getJobId() + " , Project Id: " + job.getProjectId());
+        } else {
+            System.out.println("Job unassigned to agent " + name);
+        }
     }
 
 }

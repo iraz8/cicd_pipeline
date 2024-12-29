@@ -17,7 +17,7 @@ public class NewCommitNotifierController {
     private final ProjectRepository projectRepository;
 
     @Autowired
-    public NewCommitNotifierController(JobQueueService jobQueueService, ProjectRepository projectRepository) {
+    public NewCommitNotifierController(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
     }
 

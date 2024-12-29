@@ -48,6 +48,7 @@ public class AgentsOrchestrationService {
         } else if (newNumber < currentNumber) {
             agents.subList(newNumber, currentNumber).clear();
         }
+        initializeAgents();
         System.out.println("Updated agents number to: " + newNumber);
     }
 
