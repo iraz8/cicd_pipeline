@@ -30,6 +30,7 @@
         <tr>
             <th>Project Name</th>
             <th>Active</th>
+            <th>Enable Pipeline</th>
         </tr>
         </thead>
         <tbody>
@@ -37,6 +38,10 @@
             <td th:text="${project.name}"></td>
             <td>
                 <input type="checkbox" th:checked="${project.active}" th:name="'active_' + ${project.id}" value="on"
+                       onchange="updateHiddenInput(this)">
+            </td>
+            <td>
+                <input type="checkbox" th:checked="${project.enablePipeline}" th:name="'enable_pipeline_' + ${project.id}" value="on"
                        onchange="updateHiddenInput(this)">
             </td>
         </tr>

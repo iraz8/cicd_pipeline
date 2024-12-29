@@ -20,4 +20,5 @@ public class Project {
     private String name;
     private String url;
     private Boolean active;
+    private Boolean enablePipeline;
 }

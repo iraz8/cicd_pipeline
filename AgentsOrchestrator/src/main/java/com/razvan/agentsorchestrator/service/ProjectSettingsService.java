@@ -28,20 +28,33 @@ public class ProjectSettingsService {
     }
 
     public void saveProjectSettings(Map<String, String> params) {
-        Map<Long, Boolean> projectSettings = new HashMap<>();
+        Map<Long, Boolean> activeProjectSettings = new HashMap<>();
+        Map<Long, Boolean> enabledPipelineProjectSettings = new HashMap<>();
         for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (entry.getKey().startsWith("active_")) {
-                Long projectId = Long.parseLong(entry.getKey().substring(7));
-                Boolean isActive = "on".equals(entry.getValue());
-                projectSettings.put(projectId, isActive);
+            String key = entry.getKey();
+            if (key.startsWith("active_") || key.startsWith("enable_pipeline_")) {
+                Long projectId = Long.parseLong(key.substring(key.lastIndexOf('_') + 1));
+                if (key.startsWith("active_")) {
+                    Boolean isActive = "on".equals(entry.getValue());
+                    activeProjectSettings.put(projectId, isActive);
+                } else if (key.startsWith("enable_pipeline_")) {
+                    Boolean isEnablePipeline = "on".equals(entry.getValue());
+                    enabledPipelineProjectSettings.put(projectId, isEnablePipeline);
+                }
             }
         }
 
         List<Project> projects = projectRepository.findAll();
         for (Project project : projects) {
-            Boolean isActive = projectSettings.get(project.getId());
+            Boolean isActive = activeProjectSettings.get(project.getId());
             if (isActive != null) {
                 project.setActive(isActive);
+                projectRepository.save(project);
+            }
+
+            Boolean isEnablePipeline = enabledPipelineProjectSettings.get(project.getId());
+            if (isEnablePipeline != null) {
+                project.setEnablePipeline(isEnablePipeline);
                 projectRepository.save(project);
             }
         }

@@ -321,8 +321,8 @@ public class AgentService {
             }
 
         } catch (Exception e) {
-//            agent.getJob().setErrors(e.getMessage());
-//            throw new RuntimeException("Error checking build files in container", e);
+            agent.getJob().setErrors(e.getMessage());
+            throw new RuntimeException("Error checking build files in container", e);
         }
 
         try {
