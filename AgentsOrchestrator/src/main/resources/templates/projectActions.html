@@ -93,7 +93,19 @@
             </tr>
             </tbody>
         </table>
-
+        <br>
+        <div>
+            <button type="button" onclick="document.getElementById('file-input').click();">Load actions from file...
+            </button>
+            <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(event)">
+            <button type="button" id="submit-button" style="display: none;" onclick="handleSubmit()">Submit</button>
+        </div>
+        <br>
+        <div style="margin-top: 10px; text-align: left;">
+            <button type="button" onclick="window.location.href='/';">Back</button>
+            <button type="button" onclick="window.location.reload();">Refresh</button>
+        </div>
+        <br>
         <div id="errors-container" style="display: none;">
             <h2>Errors</h2>
             <div id="errors-section">
@@ -108,17 +120,6 @@
             </div>
         </div>
     </div>
-</div>
-<br>
-<div>
-    <button type="button" onclick="document.getElementById('file-input').click();">Load actions from file...</button>
-    <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(event)">
-    <button type="button" id="submit-button" style="display: none;" onclick="handleSubmit()">Submit</button>
-</div>
-<br>
-<div style="margin-top: 10px; text-align: left;">
-    <button type="button" onclick="window.location.href='/';">Back</button>
-    <button type="button" onclick="window.location.reload();">Refresh</button>
 </div>
 <script>
     let selectedFile;
@@ -317,7 +318,7 @@
         const outputContainer = document.getElementById('output-container');
         const outputList = document.getElementById('output-list');
 
-        if (data.status === 'COMPLETED') {
+        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
             clearInterval(intervalId);
             const button = document.getElementById(`button_${command}_${projectId}`);
             if (button) {

@@ -30,8 +30,12 @@ public class NewCommitNotifierController {
         String projectName = project.get("name");
         String projectUrl = project.get("url");
         Optional<Project> projectOptional = projectRepository.findByName(projectName);
+        System.out.println("Notify new commit for repository " + projectName + " with URL: " + projectUrl);
         if (projectOptional.isPresent()) {
             Project projectDB = projectOptional.get();
+            if (projectDB.getActive() == null || !projectDB.getActive() || projectDB.getEnablePipeline() == null || !projectDB.getEnablePipeline()) {
+                return;
+            }
             Long projectId = projectDB.getId();
             String jobId = java.util.UUID.randomUUID().toString();
             String command = Commands.FULL_STEPS.toString();

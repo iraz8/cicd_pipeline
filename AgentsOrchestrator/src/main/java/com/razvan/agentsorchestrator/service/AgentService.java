@@ -217,7 +217,11 @@ public class AgentService {
         }
 
         String projectPath = "/home/" + project.get().getName();
-        String buildCommand = addOutputRedirectionToFile(getBuildCommand(agent.getContainerId(), projectPath), projectPath);
+        String buildCommand = addOutputRedirectionToFile(getBuildCommand(agent, projectPath), projectPath);
+
+        if (buildCommand.isBlank()) {
+            return false;
+        }
 
         try {
             String[] command = {"/bin/sh", "-c", buildCommand};
@@ -239,14 +243,15 @@ public class AgentService {
             System.out.println("Build command executed in container: " + containerId);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             agent.getJob().setErrors(e.getMessage());
             return false;
         }
     }
 
-    private String getBuildCommand(String containerId, String projectPath) {
-        String buildCommand;
+    private String getBuildCommand(Agent agent, String projectPath) {
+        String buildCommand = "";
+        String containerId = agent.getContainerId();
         try {
             String checkPom = "test -f " + projectPath + "/pom.xml";
             String checkGradle = "test -f " + projectPath + "/build.gradle";
@@ -262,7 +267,9 @@ public class AgentService {
             } else if (executeCommandInContainer(containerId, checkMainCSource)) {
                 buildCommand = "cd " + projectPath + " && gcc -o main main.c -lcunit";
             } else {
-                throw new UnsupportedOperationException("Unsupported project language: No recognizable build file found in " + projectPath);
+                var e = "Unsupported project language: No recognizable build file found in " + projectPath;
+                agent.getJob().setErrors(e);
+//                throw new UnsupportedOperationException(e);
             }
 
         } catch (Exception e) {
@@ -317,19 +324,23 @@ public class AgentService {
             } else if (executeCommandInContainer(containerId, checkMainCSource)) {
                 testCommand = "cd " + projectPath + " && gcc -o main *.c -lcunit && ./main";
             } else {
-                throw new UnsupportedOperationException("Unsupported project language: No recognizable build file found in " + projectPath);
+                var e = "Unsupported project language: No recognizable build file found in " + projectPath;
+                agent.getJob().setErrors(e);
+//                throw new UnsupportedOperationException(e);
+                return false;
             }
 
         } catch (Exception e) {
             agent.getJob().setErrors(e.getMessage());
-            throw new RuntimeException("Error checking build files in container", e);
+//            throw new RuntimeException("Error checking build files in container", e);
+            return false;
         }
 
         try {
             return executeCommandInContainer(containerId, addOutputRedirectionToFile(testCommand, projectPath));
         } catch (Exception e) {
             agent.getJob().setErrors(e.getMessage());
-            e.printStackTrace();
+//            e.printStackTrace();
             return false;
         }
     }
@@ -374,7 +385,7 @@ public class AgentService {
             executeCommandInContainer(containerId, addOutputRedirectionToFile(cleanCommand, projectPath));
         } catch (Exception e) {
             agent.getJob().setErrors(e.getMessage());
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
 
@@ -412,7 +423,7 @@ public class AgentService {
             agent.getJob().setOutput(output.toString());
             System.out.println("Output read successfully for project ID: " + projectId);
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             agent.getJob().setErrors(e.getMessage());
         }
     }
