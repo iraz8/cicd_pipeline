@@ -420,6 +420,10 @@ public class AgentService {
                 }
             }).awaitCompletion();
 
+            if (output.toString().startsWith("cat: can't open")) {
+                agent.getJob().setErrors("Output file not found");
+                return;
+            }
             agent.getJob().setOutput(output.toString());
             System.out.println("Output read successfully for project ID: " + projectId);
         } catch (Exception e) {
